@@ -225,6 +225,8 @@ class Pipeline:
 
             self.evaluation_tracker.task_config_logger.log(task_dict)
 
+            print("task_dict", task_dict)
+            print("fewshots_dict", fewshots_dict)
             requests, docs = create_requests_from_tasks(
                 task_dict=task_dict,
                 fewshot_dict=fewshots_dict,
@@ -469,6 +471,8 @@ class Pipeline:
         for request_type, requests in self.requests.items():
             logger.info(f"Running {request_type} requests")
             run_model = self.model.get_method_from_request_type(request_type=request_type)
+            print("len requests", len(requests))
+            print("run_model", run_model)
             responses = run_model(requests)
 
             # Storing the responses associated to the same samples together
