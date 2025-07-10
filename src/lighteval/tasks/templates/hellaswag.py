@@ -70,7 +70,7 @@ def get_hellaswag_prompt_function(
     Create a templated prompt function for a Hellaswag task.
 
     Format:
-    Context Premise thefore/cause | (Continuation 1, Continuation 2, Continuation 3)
+    Context Premise therefore/cause | (Continuation 1, Continuation 2, Continuation 3)
 
     Args:
         language (Language): The language of the Hellaswag task.
@@ -78,7 +78,7 @@ def get_hellaswag_prompt_function(
             Must map data from the dataset row to the HellaswagInput format.
             Note: The gold_idx must be an index or list of indices in the continuations list, indicating the correct continuation(s).
         formulation (Formulation, optional): The formulation to use for the task. Defaults to MCFFormulation().
-        wikihow_artifacts (list[str], optional): A list of strings to replace with dot. We have to replace the the texts with dots because
+        wikihow_artifacts (list[str], optional): A list of strings to replace with dot. We have to replace the texts with dots because
             of wikihow source.
 
     Returns:
@@ -126,7 +126,7 @@ def get_hellaswag_prompt_function(
         if ctx_b:
             ctx_a = join_ctxs(ctx_a, ctx_b)
 
-        # Removoal of the [header] can happen and we need the first letter to be capital afterwards
+        # Removal of the [header] can happen and we need the first letter to be capital afterwards
         full_context = HELLASWAG_QUERY.format(activity_label=activity_label, ctx=ctx_a)
         choices = [
             hellaswag_preprocess(

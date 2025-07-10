@@ -26,13 +26,16 @@ Custom evaluation tasks for lighteval
 
 This file generally creates just a TASKS_TABLE and TASKS_GROUPS which are then imported by LightEval.
 """
+
 import random
 import re
+from typing import Any, Dict, List, Optional, Union
 
-from lighteval.metrics.metrics import Metrics
+from lighteval.metrics.llm_as_judge import JudgeLM
+from lighteval.metrics.metrics import Metric, Metrics
 from lighteval.tasks.default_prompts import LETTER_INDICES
 from lighteval.tasks.lighteval_task import LightevalTaskConfig
-from lighteval.tasks.requests import Doc
+from lighteval.tasks.requests import Doc, SamplingMethod
 
 
 # fmt: off
@@ -100,7 +103,7 @@ class CustomArabicMMLUTask(LightevalTaskConfig):
             hf_subset=hf_subset,
             prompt_function=arabic_mmlu_pfn,
             hf_repo="MBZUAI/ArabicMMLU",
-            metric=[Metrics.loglikelihood_acc_norm],
+            metrics=[Metrics.loglikelihood_acc_norm],
             hf_avail_splits=["test"],
             evaluation_splits=["test"],
             few_shots_split=["dev"],
@@ -162,7 +165,7 @@ class CustomArabicMMLUHTTask(LightevalTaskConfig):
             hf_subset=hf_subset,
             prompt_function=arabic_mmlu_ht_pfn,
             hf_repo="MBZUAI/human_translated_arabic_mmlu",
-            metric=[Metrics.loglikelihood_acc_norm],
+            metrics=[Metrics.loglikelihood_acc_norm],
             hf_avail_splits=["test"],
             evaluation_splits=["test"],
             few_shots_split=None,
@@ -227,7 +230,7 @@ class CustomArabicMMLUMTTask(LightevalTaskConfig):
             hf_subset=hf_subset,
             prompt_function=arabic_mmlu_mt_pfn,
             hf_repo="OALL/Arabic_MMLU",
-            metric=[Metrics.loglikelihood_acc_norm],
+            metrics=[Metrics.loglikelihood_acc_norm],
             hf_avail_splits=["test", "dev"],
             evaluation_splits=["test"],
             few_shots_split="dev",
@@ -283,7 +286,7 @@ class CustomACVATask(LightevalTaskConfig):
             hf_subset=hf_subset,
             prompt_function=acva_pfn,
             hf_repo="OALL/ACVA",
-            metric=[Metrics.loglikelihood_acc_norm],
+            metrics=[Metrics.loglikelihood_acc_norm],
             hf_avail_splits=["test", "validation"],
             evaluation_splits=["test"],
             few_shots_split="validation",
@@ -340,16 +343,14 @@ class CustomAraTrustTask(LightevalTaskConfig):
             hf_subset=hf_subset,
             prompt_function=aratrust_pfn,
             hf_repo="asas-ai/AraTrust-categorized",
-            metric=[
-                Metrics.f1_score
-            ],  # Following the paper (AraTrust: An Evaluation of Trustworthiness for LLMs in Arabic)[https://arxiv.org/abs/2403.09017]
+            metrics=[Metrics.loglikelihood_acc_norm],
             hf_avail_splits=["train"],
             evaluation_splits=["train"],
             few_shots_split=None,
             few_shots_select=None,
             suite=["community"],
             generation_size=-1,
-            stop_sequence=[],
+            stop_sequence=None,
             trust_dataset=True,
             version=0,
         )
@@ -391,7 +392,7 @@ arabic_exams_task = LightevalTaskConfig(
     evaluation_splits=["test"],
     few_shots_split="validation",
     few_shots_select="sequential",
-    metric=[Metrics.loglikelihood_acc_norm],
+    metrics=[Metrics.loglikelihood_acc_norm],
     trust_dataset=True,
     version=0,
 )
@@ -411,12 +412,15 @@ def alghafa_pfn(line, task_name: str = None):
     question = line["query"]
     answer_index = int(line["label"])
     allowed_keys = [f"sol{i}" for i in range(1, 6)]
-    choices = [line[key] for key in allowed_keys if key in line]
+    extracted_choices = [line[key] for key in allowed_keys if key in line]
+    choices = [str(i) for i in range(len(extracted_choices))]
 
     instruction = "الأسئلة التالية هي أسئلة متعددة الإختيارات مع الجواب الصحيح\n\n"
     query = f"{instruction}السؤال: {question}\n"
-    for index, choice in enumerate(choices):
+
+    for index, choice in enumerate(extracted_choices):
         query += f"{index}) {choice}\n"
+
     query += "الإجابة:"
 
     return Doc(
@@ -439,7 +443,7 @@ class CustomAlGhafaNativeTask(LightevalTaskConfig):
             hf_subset=hf_subset,
             prompt_function=alghafa_pfn,
             hf_repo="OALL/AlGhafa-Arabic-LLM-Benchmark-Native",
-            metric=[Metrics.loglikelihood_acc_norm],
+            metrics=[Metrics.loglikelihood_acc_norm],
             hf_avail_splits=["test", "validation"],
             evaluation_splits=["test"],
             few_shots_split="validation",
@@ -466,7 +470,7 @@ race_ar_task = LightevalTaskConfig(
     evaluation_splits=["test"],
     few_shots_split="validation",
     few_shots_select="sequential",
-    metric=[Metrics.loglikelihood_acc_norm],
+    metrics=[Metrics.loglikelihood_acc_norm],
     trust_dataset=True,
     version=0,
 )
@@ -483,7 +487,7 @@ piqa_ar_task = LightevalTaskConfig(
     evaluation_splits=["test"],
     few_shots_split="validation",
     few_shots_select="sequential",
-    metric=[Metrics.loglikelihood_acc_norm],
+    metrics=[Metrics.loglikelihood_acc_norm],
     trust_dataset=True,
     version=0,
 )
@@ -500,7 +504,7 @@ arc_easy_ar_task = LightevalTaskConfig(
     evaluation_splits=["test"],
     few_shots_split="validation",
     few_shots_select="sequential",
-    metric=[Metrics.loglikelihood_acc_norm],
+    metrics=[Metrics.loglikelihood_acc_norm],
     trust_dataset=True,
     version=0,
 )
@@ -517,7 +521,7 @@ arc_challenge_okapi_ar_task = LightevalTaskConfig(
     evaluation_splits=["test"],
     few_shots_split="validation",
     few_shots_select="sequential",
-    metric=[Metrics.loglikelihood_acc_norm],
+    metrics=[Metrics.loglikelihood_acc_norm],
     trust_dataset=True,
     version=0,
 )
@@ -534,7 +538,7 @@ mmlu_okapi_ar_task = LightevalTaskConfig(
     evaluation_splits=["test"],
     few_shots_split="validation",
     few_shots_select="sequential",
-    metric=[Metrics.loglikelihood_acc_norm],
+    metrics=[Metrics.loglikelihood_acc_norm],
     trust_dataset=True,
     version=0,
 )
@@ -551,7 +555,7 @@ openbook_qa_ext_ar_task = LightevalTaskConfig(
     evaluation_splits=["test"],
     few_shots_split="validation",
     few_shots_select="sequential",
-    metric=[Metrics.loglikelihood_acc_norm],
+    metrics=[Metrics.loglikelihood_acc_norm],
     trust_dataset=True,
     version=0,
 )
@@ -589,7 +593,7 @@ boolq_ar_task = LightevalTaskConfig(
     evaluation_splits=["test"],
     few_shots_split="validation",
     few_shots_select="sequential",
-    metric=[Metrics.loglikelihood_acc_norm],
+    metrics=[Metrics.loglikelihood_acc_norm],
     trust_dataset=True,
     version=0,
 )
@@ -624,7 +628,7 @@ copa_ext_ar_task = LightevalTaskConfig(
     evaluation_splits=["test"],
     few_shots_split="validation",
     few_shots_select="sequential",
-    metric=[Metrics.loglikelihood_acc_norm],
+    metrics=[Metrics.loglikelihood_acc_norm],
     trust_dataset=True,
     version=0,
 )
@@ -668,7 +672,7 @@ hellaswag_okapi_ar_task = LightevalTaskConfig(
     evaluation_splits=["test"],
     few_shots_split="validation",
     few_shots_select="sequential",
-    metric=[Metrics.loglikelihood_acc_norm],
+    metrics=[Metrics.loglikelihood_acc_norm],
     trust_dataset=True,
     version=0,
 )
@@ -705,7 +709,7 @@ toxigen_ar_task = LightevalTaskConfig(
     evaluation_splits=["test"],
     few_shots_split="validation",
     few_shots_select="sequential",
-    metric=[Metrics.loglikelihood_acc_norm],
+    metrics=[Metrics.loglikelihood_acc_norm],
     trust_dataset=True,
     version=0,
 )
@@ -756,7 +760,7 @@ sciq_ar_task = LightevalTaskConfig(
     evaluation_splits=["test"],
     few_shots_split="validation",
     few_shots_select="sequential",
-    metric=[Metrics.loglikelihood_acc_norm],
+    metrics=[Metrics.loglikelihood_acc_norm],
     trust_dataset=True,
     version=0,
 )
@@ -769,7 +773,7 @@ MADINAH_QA_SUBSETS = ["Arabic Language (General)", "Arabic Language (Grammar)"]
 
 
 def madinah_qa_pfn(line, task_name: str = None):
-    instruction = "السؤال التالي هو سؤال متعدد الإختيارات. اختر الإجابة الصحيحة:\n\n"
+    instruction = "بناءً على السياق أدناه، اختر الإجابة الصحيحة للسؤال التالي من قائمة الأجوبة:\n\n"
 
     # Define the mapping from Latin to Arabic letters
     latin_to_arabic = {"A": "أ", "B": "ب", "C": "ج", "D": "د", "E": "هـ"}
@@ -790,14 +794,14 @@ def madinah_qa_pfn(line, task_name: str = None):
     # Find the correct index for the answer key in the Arabic version
     answer_index = valid_keys_latin.index(line["Answer Key"])
 
-    query = f"{instruction}{line['Question']}\n"
+    query = f"{instruction}\nالسياق:\n{line['Context']}\nالسؤال:\n{line['Question']}\n"
     query += "".join([f"{key}. {choice}\n" for key, choice in zip(valid_keys_arabic, choices)])
     query += "الإجابة:"
 
     return Doc(
         task_name=task_name,
         query=query,
-        choices=choices,
+        choices=valid_keys_arabic,
         gold_index=answer_index,  # Correct index in the valid keys
         instruction=instruction,
     )
@@ -814,7 +818,7 @@ class CustomMadinahQATask(LightevalTaskConfig):
             hf_subset=hf_subset,
             prompt_function=madinah_qa_pfn,
             hf_repo="MBZUAI/MadinahQA",
-            metric=[Metrics.loglikelihood_acc_norm],
+            metrics=[Metrics.loglikelihood_acc_norm],
             hf_avail_splits=["test"],
             evaluation_splits=["test"],
             few_shots_split=["dev"],
@@ -831,6 +835,214 @@ MADINAH_QA_TASKS = [
     CustomMadinahQATask(name=f"madinah_qa:{subset}", hf_subset=subset) for subset in MADINAH_QA_SUBSETS
 ]
 
+
+class JudgeMetricWrapper(Metric):
+    """Wrapper class for LLM-based judge metric implementation."""
+
+    def __init__(self, judge: JudgeLM):
+        """
+        Initializes the judge metric wrapper.
+
+        Args:
+            judge (JudgeLM): The LLM judge instance to use for evaluation.
+        """
+        self.judge = judge
+        self.metric_name = "llm_as_judge"
+        self.category = SamplingMethod.GENERATIVE
+        self.corpus_level_fn = self.aggregate_scores
+        self.sample_level_fn = self._sample_level_fn
+        self.higher_is_better = True  # Fixed tuple syntax
+
+    def compute(self, responses: list[str], formatted_docs: list[Doc], **kwargs) -> dict[str, float]:
+        """
+        Computes evaluation scores using the judge's evaluate_answer method.
+
+        Args:
+            responses (list[str]): The predicted answers
+            formatted_docs (list[Doc]): Documents containing questions and gold answers
+
+        Returns:
+            dict[str, float]: Dictionary containing evaluation scores
+        """
+        results = []
+        for i, doc in enumerate(formatted_docs):
+            question = doc.query
+            gold = doc.choices[doc.gold_index] if doc.gold_index is not None else None
+            answer = responses[i][0].result[0]
+
+            score, _, _ = self.judge.evaluate_answer(question=question, answer=answer, options=None, gold=gold)
+            results.append({self.metric_name: score})
+
+        return results
+
+    def aggregate_scores(self, scores: list[dict]) -> float:
+        return sum(scores) / len(scores) if scores else 0.0
+
+    def _sample_level_fn(self):
+        return None
+
+
+def parse_candidates(candidates: Union[List[str], str]) -> List[str]:
+    """
+    Parses and validates candidate answers from either list or string format.
+
+    Args:
+        candidates: Either a list of candidate answers or a newline-separated string
+
+    Returns:
+        List[str]: List of validated candidate answers
+
+    Raises:
+        ValueError: If candidates cannot be parsed or are empty
+    """
+    try:
+        if isinstance(candidates, list):
+            parsed_candidates = [str(c).strip() for c in candidates if c]
+        else:
+            parsed_candidates = [c.strip() for c in str(candidates).split("\n") if c.strip()]
+
+        if not parsed_candidates:
+            raise ValueError("No valid candidates found after parsing")
+
+        return parsed_candidates
+    except Exception as e:
+        raise ValueError(f"Failed to parse candidates: {str(e)}")
+
+
+def qa_prompt_arabic(line: Dict[str, Any], task_name: str = None) -> Doc:
+    """
+    Formats the prompt for Arabic question answering with candidates.
+
+    Args:
+        line: Dictionary containing question and candidate information
+        task_name: Optional name for the task
+
+    Returns:
+        Doc: Formatted document for evaluation
+
+    Raises:
+        ValueError: If required fields are missing or invalid
+    """
+    try:
+        # Validates and extracts the question
+        if not isinstance(line.get("question"), str):
+            raise ValueError("Question must be a string")
+        question = line["question"]
+
+        # Processes candidate answers
+        candidates = parse_candidates(line["candidates"])
+
+        # Validates gold answer
+        if "gold_answer" not in line:
+            raise ValueError("Gold answer is required")
+        gold_answer = str(line["gold_answer"])
+
+        # Constructs the prompt
+        instruction = "بناءً على السياقات المقترحة التالية، اجب عن السؤال التالي"
+        query = f"{instruction}\n\nالسؤال:\n{question}\n\nالسياقات المقترحة:\n{', '.join(candidates)}\n"
+
+        return Doc(
+            task_name=task_name or "alrage",
+            query=query,
+            instruction=instruction,
+            choices=[gold_answer],  # Gold answer is used as the only valid choice
+            gold_index=0,  # Index of the correct answer in choices
+        )
+    except Exception as e:
+        raise ValueError(f"Failed to create QA prompt: {str(e)}")
+
+
+def judge_template(question: str, answer: str, gold: str, options: Optional[List[str]] = None) -> List[Dict[str, str]]:
+    """
+    Template for the Arabic judge prompt.
+
+    System prompt translation:
+    You are a neutral expert evaluator. Your tasks are:
+    1. Evaluate the answer's accuracy compared to the correct answer
+    2. Verify that the answer is supported by the provided context
+    3. Evaluate the quality and comprehensiveness of the answer
+    Rate the answer on a scale from 0 to 10.
+
+    Args:
+        question: The question being evaluated
+        answer: The provided answer
+        gold: The correct answer
+        options: Optional list of answer choices
+
+    Returns:
+        List[Dict[str, str]]: Formatted messages for the judge
+    """
+    messages = [
+        {
+            "role": "system",
+            "content": """أنت مقيّم محايد خبير باللغة العربية. يجب عليك:
+1. تقييم دقة الإجابة مقارنة بالإجابة الصحيحة
+2. التحقق من أن الإجابة مدعومة بالسياق المقدم
+3. تقييم جودة وشمولية الإجابة
+
+مهم جداً: يجب أن يكون ردك رقماً فقط من 0 إلى 10. لا تضف أي نص أو تفسير.""",
+        },
+        {
+            "role": "user",
+            "content": f"""السؤال: {question}
+
+الإجابة المقدمة: {answer}
+
+الإجابة الصحيحة: {gold}
+
+أعط تقييماً من 0 إلى 10:
+0-2: إجابة خاطئة تماماً
+3-4: إجابة جزئية مع أخطاء
+5-6: إجابة متوسطة
+7-8: إجابة جيدة
+9-10: إجابة ممتازة
+
+اكتب رقماً فقط من 0 إلى 10 بدون أي نص إضافي:""",
+        },
+    ]
+    return messages
+
+
+def process_judge_response(response) -> float:
+    """Process the judge's response to extract the score"""
+    # If response is a list, extract the content from the user role
+    if isinstance(response, list):
+        response_content = " ".join(item["content"] for item in response if item["role"] == "user")
+    else:
+        response_content = response  # If it's not a list, use it directly
+
+    try:
+        # Extract the score from the response content
+        score = float(next(num for num in response_content.split() if num.replace(".", "", 1).isdigit()))
+        return min(max(score / 10.0, 0.0), 1.0)
+    except (StopIteration, ValueError):
+        return 0.0
+
+
+judge = JudgeLM(
+    model="Qwen/Qwen2.5-72B-Instruct",
+    templates=judge_template,
+    process_judge_response=process_judge_response,
+    judge_backend="vllm",
+)
+
+wrapped_judge = JudgeMetricWrapper(judge)
+
+# Task configuration
+alrage_qa_task = LightevalTaskConfig(
+    name="alrage_qa",
+    prompt_function=qa_prompt_arabic,
+    suite=["community"],
+    hf_repo="OALL/ALRAGE",
+    hf_subset=None,
+    hf_avail_splits=["train"],
+    evaluation_splits=["train"],
+    metrics=[wrapped_judge],
+    trust_dataset=True,
+    generation_size=200,
+    stop_sequence=[],
+    version=0,
+)
 
 TASKS_TABLE = (
     ARABIC_MMLU_TASKS
@@ -852,4 +1064,5 @@ TASKS_TABLE = (
     + [hellaswag_okapi_ar_task]
     + [toxigen_ar_task]
     + [sciq_ar_task]
+    + [alrage_qa_task]
 )
