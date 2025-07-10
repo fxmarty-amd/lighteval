@@ -138,6 +138,7 @@ class Pipeline:
         model_config=None,
         model=None,
         metric_options=None,
+        config=None
     ):
         if not (model or model_config):
             raise ValueError("Must provide either a model or model config when creating a pipeline.")
@@ -153,7 +154,7 @@ class Pipeline:
         self.evaluation_tracker = evaluation_tracker
         self._metric_options = metric_options or {}
         self.accelerator, self.parallel_context = self._init_parallelism_manager()
-        self.model = self._init_model(model_config, model)
+        self.model = self._init_model(model_config, model, config)
 
         generation_parameters = model_config.generation_parameters.model_dump() if model_config else {}
 
@@ -183,7 +184,7 @@ class Pipeline:
 
         return accelerator, parallel_context
 
-    def _init_model(self, model_config, model):
+    def _init_model(self, model_config, model, config):
         logger.info("--- LOADING MODEL ---")
         if model_config is not None:
             if self.parallel_context:
@@ -205,6 +206,7 @@ class Pipeline:
                 model=model,
                 use_chat_template=self.pipeline_parameters.use_chat_template,
                 accelerator=self.accelerator,
+                config=config
             )
 
     def _init_tasks_and_requests(self, tasks: str):

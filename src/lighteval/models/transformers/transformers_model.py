@@ -206,6 +206,7 @@ class TransformersModel(LightevalModel):
             try:
                 logger.info("Compiling the model")
                 self.model.model.compile()
+                print("Model compiled")
             except AttributeError as e:
                 logger.warning("Could not compile the model because: ", e)
 
@@ -247,10 +248,10 @@ class TransformersModel(LightevalModel):
     ):
         # Slightly hackish way to test if the model is a AutoModelForCausalLM, since the instances don't
         # derive from this class explicitely
-        assert isinstance(model, LightevalModel) or type(model).__name__ in MODEL_FOR_CAUSAL_LM_MAPPING_NAMES.values()
+        # assert isinstance(model, LightevalModel) or type(model).__name__ in MODEL_FOR_CAUSAL_LM_MAPPING_NAMES.values()
 
-        if isinstance(model, LightevalModel):
-            return model
+        # if isinstance(model, LightevalModel):
+        #     return model
 
         # Instanciate the object without using __init__
         self = cls.__new__(cls)
@@ -293,6 +294,9 @@ class TransformersModel(LightevalModel):
             model_dtype=self.precision,
             model_size=model_size,
         )
+        
+         
+        self.generation_config_dict = self.model.generation_config.to_dict()
         return self
 
     @property
