@@ -217,6 +217,8 @@ class TransformersModel(LightevalModel):
         if is_accelerate_available():
             model_size, _ = calculate_maximum_sizes(self.model)
             model_size = convert_bytes(model_size)
+
+            model_size = -1  # bugged
         else:
             model_size = -1
 
@@ -286,6 +288,8 @@ class TransformersModel(LightevalModel):
         if is_accelerate_available():
             model_size, _ = calculate_maximum_sizes(self.model)
             model_size = convert_bytes(model_size)
+
+            model_size = -1  # bugged
         else:
             model_size = -1
         self.model_info = ModelInfo(
@@ -295,7 +299,6 @@ class TransformersModel(LightevalModel):
             model_size=model_size,
         )
         
-         
         self.generation_config_dict = self.model.generation_config.to_dict()
         return self
 

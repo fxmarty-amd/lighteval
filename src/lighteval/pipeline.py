@@ -524,6 +524,8 @@ class Pipeline:
         for task_name, samples_per_metric in task_metric_category_groups.items():
             task: LightevalTask = self._get_task(task_name)
 
+            print(f"EVALUATING {task_name}")
+
             for metric_category, samples in samples_per_metric.items():
                 sample_ids = samples["ids"]
                 responses = samples["responses"]
